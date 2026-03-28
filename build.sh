@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "=================================="
-echo "  [+] Richman 3 Patch Builder Pro"
+echo "  [+] Rich2 Patch Builder Pro"
 echo "  [+] Author: Overmind"
 echo "=================================="
 
@@ -24,13 +24,10 @@ fi
 # 3. 打包 EXE (透過 Wine 呼叫，並將進入點改為 main.py)
 echo "[*] Building EXE with PyInstaller..."
 wine python -m PyInstaller --noconsole --onefile --clean \
-    --name rich3_patch \
+    --name rich2_patch \
     --icon=icon.png \
     --version-file=file_version_info.txt \
     --add-data "icon.png;." \
-    --add-data "EVENTVOC;EVENTVOC" \
-    --add-data "NEWSVOC;NEWSVOC" \
-    --add-data "SCREEN;SCREEN" \
     main.py
 
 if [ $? -ne 0 ]; then
@@ -45,16 +42,16 @@ echo "[*] Signing the executable..."
 if command -v osslsigncode &> /dev/null; then
     # 執行原生簽章
     osslsigncode sign -pkcs12 "Overmind.pfx" -pass "overmind" \
-        -n "Richman 3 Patcher" \
+        -n "Rich2 Patch" \
         -t http://timestamp.digicert.com \
-        -in "dist/rich3_patch.exe" \
-        -out "dist/rich3_patch_signed.exe"
+        -in "dist/rich2_patch.exe" \
+        -out "dist/rich2_patch_signed.exe"
     
     if [ $? -eq 0 ]; then
         # 簽章成功就把原本未簽章的覆蓋掉
-        mv "dist/rich3_patch_signed.exe" "dist/rich3_patch.exe"
+        mv "dist/rich2_patch_signed.exe" "dist/rich2_patch.exe"
         echo ""
-        echo "[DONE] 完工！簽章完美打上，請到 dist 資料夾查看 rich3_patch.exe"
+        echo "[DONE] 完工！簽章完美打上，請到 dist 資料夾查看 rich2_patch.exe"
     else
         echo "[WARN] 簽章過程報錯，請檢查憑證或網路連線。"
     fi
