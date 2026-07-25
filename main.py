@@ -3,13 +3,7 @@ from tkinter import ttk
 import os
 import sys
 import shutil
-import ctypes
-
-try:
-    from PIL import Image
-except ImportError:
-    print("[ERROR][INIT] 雞歪，少了 PIL 套件！請執行 pip install Pillow")
-    sys.exit(1)
+from tkinter import messagebox
 
 # =====================================================================
 # 全域 UI 變數與 Log 系統
@@ -123,8 +117,9 @@ def run_patch():
         err_msg = f"幹，Patch 發生嚴重錯誤：\n{str(e)}"
         emit_log(err_msg, status="FATAL")
         if ui_root:
+            ui_root.withdraw()
+            messagebox.showerror("大富翁2 更新失敗", err_msg)
             ui_root.destroy()
-        ctypes.windll.user32.MessageBoxW(0, err_msg, "大富翁2 更新失敗", 0)
         sys.exit(1)
 
     # 簡單分析成果
@@ -136,8 +131,9 @@ def run_patch():
     
     # 關閉進度條視窗，彈出最終結果
     if ui_root:
+        ui_root.withdraw()
+        messagebox.showinfo("大富翁2 更新結果", final_msg)
         ui_root.destroy()
-    ctypes.windll.user32.MessageBoxW(0, final_msg, "大富翁2 更新結果", 0)
 
 def main():
     global ui_root, ui_progress
@@ -149,7 +145,6 @@ def main():
         base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
         icon_path = os.path.join(base_path, "icon.png")
         if os.path.exists(icon_path):
-            img = Image.open(icon_path)
             photo = tk.PhotoImage(file=icon_path)
             ui_root.iconphoto(True, photo)
     except Exception as e:
@@ -175,7 +170,7 @@ def main():
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
     global ui_log_text
-    ui_log_text = tk.Text(log_frame, font=("微軟正黑體"), yscrollcommand=scrollbar.set, state=tk.DISABLED, bg="#F0F0F0")
+    ui_log_text = tk.Text(log_frame, font=("微軟正黑體", 10), yscrollcommand=scrollbar.set, state=tk.DISABLED, bg="#F0F0F0")
     ui_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.config(command=ui_log_text.yview)
 
