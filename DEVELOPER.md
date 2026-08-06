@@ -119,7 +119,7 @@ RICH2_PATCH/
 ├─ tsconfig.json
 ├─ src/
 │  ├─ main.ts               前端進入點：綁事件、收 Rust 送來的日誌與進度
-│  └─ style.css             Tailwind 設定與色票，與 RICH2_EDITOR 同一份 @theme
+│  └─ style.css             Tailwind 設定；色票引用 docs/rules/tokens.css
 ├─ src-tauri/
 │  ├─ Cargo.toml            Rust 相依與 release profile
 │  ├─ tauri.conf.json       視窗、bundle、identifier
@@ -416,6 +416,7 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 ## 相關文件
 
 - 使用說明：[README.md](README.md)
+- 介面規格：[INTERFACE.md](INTERFACE.md)
 - 變更紀錄：[CHANGELOG.md](CHANGELOG.md)
 - 遷移計畫：[TAURI_MIGRATION.md](TAURI_MIGRATION.md)
 - 文件與發佈規範：[docs/rules/](docs/rules/)
