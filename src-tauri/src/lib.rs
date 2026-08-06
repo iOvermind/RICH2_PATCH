@@ -70,10 +70,21 @@ async fn run_patch(app: AppHandle, target_dir: String) -> Result<String, String>
     .map_err(|err| format!("背景執行緒異常結束：{err}"))?
 }
 
+/// 程式啟動時的預設目錄。
+///
+/// 沿用 Python 版的貼心設計：預設帶入程式所在目錄，讓「把程式丟進遊戲資料夾直接執行」
+/// 也能用。放在 Rust 端做是刻意的——前端因此不需要任何檔案系統權限。
+#[tauri::command]
+fn default_dir() -> String {
+    std::env::current_dir()
+        .map(|path| path.display().to_string())
+        .unwrap_or_default()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![run_patch])
+        .invoke_handler(tauri::generate_handler![run_patch, default_dir])
         .run(tauri::generate_context!())
         .expect("Tauri 啟動失敗");
 }
