@@ -1,6 +1,6 @@
 [package]
 name = "rich2-patch"
-version = "1.0.0"
+version = "1.0.1"
 description = "大富翁2 Patch"
 edition = "2021"
 rust-version = "1.77"

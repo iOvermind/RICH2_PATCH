@@ -267,8 +267,8 @@ Get-FileHash '<py 複本>\RUN.EXE', '<rs 複本>\RUN.EXE' -Algorithm SHA256
 
 | 產物 | 大小 | 用途 |
 | :--- | ---: | :--- |
-| `release/RICH2_PATCH-v1.0.0-Portable.exe` | 3.06 MB | 免安裝，直接執行 |
-| `release/RICH2_PATCH-v1.0.0-Setup.exe` | 1.08 MB | NSIS 安裝檔，裝到使用者目錄，不需要管理員 |
+| `release/RICH2_PATCH-v1.0.1-Portable.exe` | 3.06 MB | 免安裝，直接執行 |
+| `release/RICH2_PATCH-v1.0.1-Setup.exe` | 1.08 MB | NSIS 安裝檔，裝到使用者目錄，不需要管理員 |
 | `release/SHA256SUMS.txt` | — | 兩個產物的校驗碼，**必附**（RELEASE_RULES §4.3） |
 
 命名依 [docs/rules/RELEASE_RULES.md](docs/rules/RELEASE_RULES.md) §2.1：只用 `A-Za-z0-9.-_`，因為 GitHub 會把其餘字元換成點，本機與線上檔名一旦不同，校驗碼就失去意義。`release/` 不進版控。
