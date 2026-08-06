@@ -2425,6 +2425,7 @@ dependencies = [
 name = "rich2-patch"
 version = "1.0.0"
 dependencies = [
+ "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
