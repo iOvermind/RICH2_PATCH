@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大富翁2 Patch</title>
+
+  <!-- Tailwind 由 Vite 在建置時產出（色票見 src/style.css 的 @theme），不連任何 CDN。 -->
+</head>
+
+<body class="bg-background text-on-background font-body h-screen flex flex-col overflow-hidden">
+
+  <!-- 標題列 -->
+  <header class="flex items-center w-full px-5 h-12 border-b border-outline-variant/15 shrink-0">
+    <span class="text-base font-bold font-headline tracking-tight">大富翁2 Patch</span>
+    <span class="ml-2 text-xs text-on-surface-variant/70">Rich Patch Series</span>
+  </header>
+
+  <!-- 主區域。實際的目錄選擇、開始按鈕、進度條與日誌區在步驟 3 補上。 -->
+  <main id="app" class="flex-1 flex items-center justify-center text-on-surface-variant">
+    <p class="text-sm">骨架就緒</p>
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
