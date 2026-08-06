@@ -1,5 +1,7 @@
-# Rich Patch Series — 相依套件
-# 執行期：只用 Python 標準函式庫 (tkinter / os / sys / shutil / re)，不需額外套件。
-
-# 打包用 (僅 build.sh / build.bat 需要)
-pyinstaller>=6.0
+# Rich Patch Series — Python 基準版（oracle）的相依套件
+#
+# 只用標準函式庫 (tkinter / os / sys / shutil / re)，沒有任何第三方相依。
+# 這份檔案保留是為了說明「確實不需要裝東西」，不是遺漏。
+#
+# 打包用的 PyInstaller 已移除：main 上的 Python 版只作為驗證 Rust 實作的基準，
+# 不再打包發佈。打包腳本與 .spec 在 legacy/python-tkinter 分支。

@@ -33,7 +33,8 @@ Node 與 Rust 的版本下限未逐一實測，以 Vite 8 與 `Cargo.toml` 的 `
 | :--- | :--- | :--- |
 | Python | 3.10 以上（實測 3.14） | 基準實作 |
 | tkinter | 隨 Python 內附 | 基準實作的介面 |
-| PyInstaller | 6.0 以上 | 打包成單一 EXE |
+
+`main` 上只留 `main.py` 與 `requirements.txt`——oracle 只需要**執行**，不需要打包。Python 版的打包腳本與 `.spec` 留在 `legacy/python-tkinter` 分支（見 §8）。
 
 **作業系統限制**：產物僅供 Windows。
 
@@ -131,10 +132,10 @@ RICH2_PATCH/
 │  │     ├─ mod.rs          共用引擎：backup_file / patch_binary / Reporter
 │  │     └─ rich2.rs        RUN.EXE 的 4 條特徵碼與主幹流程
 │  └─ tests/oracle.rs       拿真實遊戲檔跑一遍，供與 Python 版比對
-├─ main.py                  ← Python 基準版，驗收通過後移除
-├─ rich2_patch.spec         ← 同上
-├─ file_version_info.txt    ← 同上
-├─ build.ps1 / .bat / .sh   ← Python 版的打包腳本，同上
+├─ build.ps1                建置與發佈打包（含版本號一致性檢查）
+├─ release/                 發佈產物，不進版控
+├─ main.py                  ← Python 基準版（oracle），驗收通過後移除
+├─ requirements.txt         ← 同上
 └─ docs/rules/              文件與發佈規範（正典在 DEV_TEMPLATE）
 ```
 
@@ -244,31 +245,34 @@ Get-FileHash '<py 複本>\RUN.EXE', '<rs 複本>\RUN.EXE' -Algorithm SHA256
 ## 7. 建置與產物
 
 ```powershell
-npm run tauri build
+.\build.ps1                # 建置並收進 release\
+.\build.ps1 -Sign          # 另外用自簽憑證簽章
+.\build.ps1 -SkipInstall   # 跳過 npm ci，相依沒動過時較快
 ```
+
+`build.ps1` 是一鍵流程：**先擋版本號不一致**（見下方「版本號」）→ `npm ci` → `tauri build` → 依規範命名收進 `release\` → 選擇性簽章 → 產生 `SHA256SUMS.txt` → 回報體積。
+
+只要單純編譯的話也可以直接下 `npm run tauri build`，但產物會留在 `src-tauri/target/release/` 且是原始檔名，**不符合發佈規範**。
 
 第一次要編譯整個 Tauri 相依樹，約 6–7 分鐘。`src-tauri/target/` 會長到 1.3 GB 左右；若也跑過 `cargo test`（debug profile 另外一份），總計約 4.4 GB。
 
-**產物**（2026-08-06 實測）
+**產物**（2026-08-06 實測，已簽章）
 
-| 產物 | 位置 | 大小 |
-| :--- | :--- | ---: |
-| portable exe | `src-tauri/target/release/rich2-patch.exe` | 3.05 MB |
-| NSIS 安裝檔 | `src-tauri/target/release/bundle/nsis/` | 1.07 MB |
+| 產物 | 大小 | 用途 |
+| :--- | ---: | :--- |
+| `release/[RICH2_PATCH][v1.0.0][Portable].exe` | 3.06 MB | 免安裝，直接執行 |
+| `release/[RICH2_PATCH][v1.0.0][Setup].exe` | 1.08 MB | NSIS 安裝檔，裝到使用者目錄，不需要管理員 |
+| `release/SHA256SUMS.txt` | — | 兩個產物的校驗碼，**必附**（RELEASE_RULES §4.3） |
+
+命名依 [docs/rules/RELEASE_RULES.md](docs/rules/RELEASE_RULES.md) §2.1，**中括號不可省略**。`release/` 不進版控。
 
 對照 Python 版的 9.70 MB，體積砍掉約七成——這正是這次遷移的主要動機。
 
+**簽章**：走自簽憑證 `Overmind.pfx`（不進版控）。腳本會先找憑證存放區裡既有的 `CN=Overmind` 來用，沒有才簽發新的——舊版腳本每次找不到 pfx 就再簽一張，會在存放區裡累積同名憑證。
+
+自簽憑證只是讓 EXE 帶上發行者名稱，**不具信任價值**：`Get-AuthenticodeSignature` 會回報「terminated in a root certificate which is not trusted」，使用者仍會看到 SmartScreen 警告。這件事在 README 的常見問題有對使用者說明，並要他們改用校驗碼確認來源。
+
 Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt-level = "s"`、`lto = true`、`codegen-units = 1`、`panic = "abort"`、`strip = true`，與 RICH2_EDITOR 同一組設定。
-
-> **已知落差**：產物命名與簽章尚未接上，仍不符合
-> [docs/rules/RELEASE_RULES.md](docs/rules/RELEASE_RULES.md) §2.1 要求的
-> `[RICH2_PATCH][v1.0.0][Portable].exe` 格式。發佈前必須處理（遷移計畫步驟 6）。
-
-**Python 版的打包**（保留期間仍可用）
-
-```powershell
-.\build.ps1                # 走 rich2_patch.spec，不要直接 pyinstaller main.py
-```
 
 ### 版本號
 
@@ -280,10 +284,9 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 | `src-tauri/tauri.conf.json` | `version` | 手動 |
 | `src-tauri/Cargo.toml` | `package.version` | 手動 |
 | `src-tauri/Cargo.lock` | `rich2-patch` 的 `version` | 自動（`cargo build` 更新） |
-| `file_version_info.txt` | `filevers` / `FileVersion` / `ProductVersion` | 手動（Python 版專用，移除該版後一併刪除） |
-| 產物檔名 | — | 自動（Tauri 由 `tauri.conf.json` 讀取） |
+| 產物檔名 | — | 自動（`build.ps1` 讀取單一來源） |
 
-發佈前依 [docs/rules/VERSION_RULES.md](docs/rules/VERSION_RULES.md) §7 逐項核對。
+**改版本號時，前三處都要手動改。** `build.ps1` 開頭會把三處讀出來比對，**不一致就直接中止**，這就是 [docs/rules/VERSION_RULES.md](docs/rules/VERSION_RULES.md) §2.3 說的「唯讀檢查」——版本號一律手動改，這道檢查負責攔住漏改的那一處。
 
 ---
 
@@ -316,7 +319,7 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 | 簽章憑證 `Overmind.pfx` | `.gitignore` 的 `*.pfx` | 專案根目錄，由建置腳本自動產生 |
 | 遊戲原始檔（`*.EXE` / `*.MKF` / `*.PAT` / `*.bak`…） | `.gitignore` 逐項排除 | 庫外，或 `original/` / `dist/` 等已忽略的目錄 |
 
-⚠ **憑證密碼 `overmind` 以明文寫在 `build.ps1`、`build.bat`、`build.sh` 中。** 這是刻意的權衡：該憑證為自簽、僅用於讓 EXE 帶上發行者名稱，本身不具信任價值，密碼公開不造成額外風險。**因此這張憑證不得用於任何其他用途**；若日後改用有實際信任價值的憑證，密碼必須改由環境變數或憑證存放區提供。
+⚠ **憑證密碼 `overmind` 以明文寫在 `build.ps1` 中。** 這是刻意的權衡：該憑證為自簽、僅用於讓 EXE 帶上發行者名稱，本身不具信任價值，密碼公開不造成額外風險。**因此這張憑證不得用於任何其他用途**；若日後改用有實際信任價值的憑證，密碼必須改由環境變數或憑證存放區提供。
 
 **遊戲原始檔不進版控**的理由是版權，不是體積——這點請維持。
 
@@ -340,7 +343,7 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 - `package-lock.json` 與 `src-tauri/Cargo.lock` **都進版控**。
 - 安裝一律用 **`npm ci`**（依鎖檔安裝，結果可重現），不要用 `npm install`。
 - 前端只有 4 個直接相依（Tauri API、dialog plugin、Vite、Tailwind 及其型別工具），刻意維持精簡——這是 patcher 能只有 3 MB 的原因之一。
-- Python 版保留期間，其相依只有 PyInstaller（僅打包用）。
+- Python oracle 只用標準函式庫，沒有執行期相依（`requirements.txt` 保留但已無必要項目）。
 
 ### 9.4 破壞性操作的保護
 
@@ -384,11 +387,22 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 - **原因**：單元測試用的是合成資料，涵蓋不到真實 EXE 的所有情況。
 - **處置**：動到 `src/patch/` 的任何邏輯後，**必須**依 §6 重跑一次 oracle 比對。這是 Python 版還留著的唯一理由。
 
-#### 直接用 `pyinstaller main.py` 打包 Python 版，EXE 會肥好幾 MB
+#### 編輯 `build.ps1` 後整支腳本變成語法錯誤
 
-- **症狀**：Python 版打包成功，但產出的 EXE 明顯大於預期。
-- **原因**：`.spec` 裡的模組排除清單與 Tcl/Tk 資源裁切只有走 `.spec` 才會生效。
-- **處置**：一律走 `rich2_patch.spec`，或直接用 `build.ps1`。
+- **症狀**：執行 `build.ps1` 出現一堆莫名其妙的 `Unexpected token`、`Missing closing '}'`，錯誤都指向含中文的行。
+- **原因**：Windows PowerShell 5.1 讀 `.ps1` 預設用**系統 ANSI 碼頁**。檔案若存成無 BOM 的 UTF-8，中文會被拆壞、直接變成語法錯誤。
+- **處置**：`build.ps1` **必須**存成 **UTF-8 with BOM**（`.gitattributes` 另有 `*.ps1 text eol=crlf`）。很多編輯器與工具預設存無 BOM，改完務必確認：
+  ```powershell
+  $b = [System.IO.File]::ReadAllBytes('build.ps1')
+  $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF   # 要是 True
+  ```
+  注意這是 `.ps1` 專屬的例外——Markdown 文件依規範一律 UTF-8 **無** BOM。
+
+#### `npm` 或 `cargo` 明明跑成功，腳本卻中止
+
+- **症狀**：`build.ps1` 在建置那步失敗，訊息是 `NativeCommandError`，內容卻是 `Info Looking up installed tauri packages...` 這種正常的進度訊息。
+- **原因**：PowerShell 5.1 會把原生指令寫到 stderr 的每一行包成 `ErrorRecord`；npm 與 cargo 都把進度訊息寫到 stderr。配上 `$ErrorActionPreference = 'Stop'`，成功的指令也會被當成失敗。
+- **處置**：原生指令一律走 `build.ps1` 裡的 `Invoke-Native`，它會暫時把 `ErrorActionPreference` 切成 `Continue`，**成敗只看離開碼**。不要直接呼叫再用 `$?` 判斷。
 
 ---
 
