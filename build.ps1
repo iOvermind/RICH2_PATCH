@@ -92,13 +92,13 @@ $setupSource = Get-ChildItem "$targetDir\bundle\nsis\*_x64-setup.exe" | Select-O
 if (-not $setupSource) { Fail '找不到 NSIS 安裝檔' }
 
 $artifacts = @(
-    @{ From = "$targetDir\rich2-patch.exe"; To = "[$ProjectName][v$version][Portable].exe" }
-    @{ From = $setupSource.FullName;        To = "[$ProjectName][v$version][Setup].exe" }
+    @{ From = "$targetDir\rich2-patch.exe"; To = "$ProjectName-v$version-Portable.exe" }
+    @{ From = $setupSource.FullName;        To = "$ProjectName-v$version-Setup.exe" }
 )
 
 foreach ($item in $artifacts) {
     if (-not (Test-Path $item.From)) { Fail "找不到產物：$($item.From)" }
-    # 檔名含中括號，PowerShell 會當成萬用字元，一律走 -LiteralPath
+    # 一律走 -LiteralPath，不讓 PowerShell 對檔名做萬用字元展開
     Copy-Item -LiteralPath $item.From -Destination (Join-Path $outDir $item.To) -Force
     Write-Host "      $($item.To)"
 }

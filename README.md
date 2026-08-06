@@ -41,8 +41,8 @@
 
 | 檔案 | 說明 |
 | :--- | :--- |
-| `[RICH2_PATCH][v1.0.0][Portable].exe` | 免安裝，直接執行。放哪裡都可以。 |
-| `[RICH2_PATCH][v1.0.0][Setup].exe` | 安裝檔。裝到使用者目錄，不需要管理員權限。 |
+| `RICH2_PATCH-v1.0.0-Portable.exe` | 免安裝，直接執行。放哪裡都可以。 |
+| `RICH2_PATCH-v1.0.0-Setup.exe` | 安裝檔。裝到使用者目錄，不需要管理員權限。 |
 
 ---
 
@@ -65,10 +65,8 @@
 不放心的話，Release 附有 `SHA256SUMS.txt`，可以比對確認檔案沒有被掉包：
 
 ```powershell
-Get-FileHash '.\[RICH2_PATCH][v1.0.0][Portable].exe' -Algorithm SHA256
+Get-FileHash .\RICH2_PATCH-v1.0.0-Portable.exe -Algorithm SHA256
 ```
-
-（檔名含中括號，PowerShell 會把它當成萬用字元，記得用引號包起來。）
 
 #### 日誌顯示「找不到 RUN.EXE！請確認檔案在目標目錄。」
 
