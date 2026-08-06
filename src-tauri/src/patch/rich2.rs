@@ -95,7 +95,10 @@ mod tests {
     fn 四條特徵碼的長度必須等長() {
         // 替換碼與原始碼長度不同會讓後面的指令整個位移，那是災難性的
         for rule in exe_rules() {
-            for (from, to) in &rule.targets {
+            for candidate in &rule.matches {
+                let crate::patch::Match::Exact { from, to } = candidate else {
+                    panic!("RICH2 不該有萬用位元組的特徵碼");
+                };
                 assert_eq!(
                     from.len(),
                     to.len(),

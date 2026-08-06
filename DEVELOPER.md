@@ -129,7 +129,8 @@ RICH2_PATCH/
 │  │  ├─ main.rs            進入點，只呼叫 lib
 │  │  ├─ lib.rs             Tauri 外殼、指令、事件轉送
 │  │  └─ patch/
-│  │     ├─ mod.rs          共用引擎：backup_file / patch_binary / Reporter
+│  │     ├─ mod.rs          模組宣告
+│  │     ├─ engine.rs       ⚠ 共用引擎，與 RICH3_PATCH **逐字元相同**
 │  │     └─ rich2.rs        RUN.EXE 的 4 條特徵碼與主幹流程
 │  └─ tests/oracle.rs       拿真實遊戲檔跑一遍，供與 Python 版比對
 ├─ build.ps1                建置與發佈打包（含版本號一致性檢查）
@@ -147,8 +148,8 @@ RICH2_PATCH/
 
 | 模組 | 職責 | 依賴 |
 | :--- | :--- | :--- |
-| `patch::mod` | 共用引擎：特徵碼比對、備份、寫檔、摘要格式 | **不依賴 Tauri** |
-| `patch::rich2` | 《大富翁2》專屬：4 條特徵碼與主幹流程 | `patch::mod` |
+| `patch::engine` | 共用引擎：特徵碼比對、備份、寫檔、摘要格式 | **不依賴 Tauri** |
+| `patch::rich2` | 《大富翁2》專屬：4 條特徵碼與主幹流程 | `patch::engine` |
 | `lib.rs` | Tauri 外殼：指令、把引擎輸出轉成事件 | 以上兩者 + Tauri |
 | `src/main.ts` | 前端：畫面與事件 | Tauri API |
 
@@ -166,6 +167,12 @@ RICH2_PATCH/
 - **決定**：所有二進位處理在 `src-tauri/src/patch/`，前端只負責畫面。
 - **理由**：patcher 沒有瀏覽器版的需求，把引擎留在 Rust 就**不必把檔案系統權限開放給前端**——前端只需要 dialog 來挑資料夾（見 §9.2）。
 - **代價**：與 RICH2_EDITOR 相反的分工，兩個專案的架構不能互相套用。那邊邏輯在前端 TypeScript，因為它要同時服務桌面版與瀏覽器版。
+
+#### 共用引擎獨立成 `engine.rs`，與 RICH3_PATCH 逐字元相同
+
+- **決定**：特徵碼比對、備份、寫檔、摘要格式放 `patch/engine.rs`；`patch/mod.rs` 只宣告模組。兩支 patcher 的 `engine.rs` **必須逐字元相同**，改動時同步複製。
+- **理由**：兩支程式的引擎行為本來就該一致（同一套備份策略、同一種日誌格式、同一組替換語意）。放在同一個檔案而非各自實作，差異才不會悄悄長出來——可以直接用雜湊驗證。
+- **代價**：改 `engine.rs` 一定要同時動兩個 repo；只有其中一邊需要的功能（例如 RICH3 的萬用位元組比對）也得寫進共用檔。
 
 #### 引擎以 `Reporter` trait 與 Tauri 解耦
 
@@ -366,8 +373,8 @@ Rust 的 release profile（`src-tauri/Cargo.toml`）刻意為體積調校：`opt
 #### 第一次建置要六分鐘以上，且吃掉 1.3 GB
 
 - **症狀**：`cargo test` 或 `npm run tauri build` 長時間沒有輸出。
-- **原因**：整個 Tauri 相依樹要從頭編譯，release profile 又開了 `lto = true` 與 `codegen-units = 1`。debug 與 release 是兩份獨立的產物，都跑過的話 `target/` 會到 4.4 GB。
-- **處置**：正常現象。**不要**隨手刪 `src-tauri/target/`，刪掉下次又要重來一遍。
+- **原因**：整個 Tauri 相依樹要從頭編譯，其中 `windows` / `windows-sys` 那組 API 綁定特別耗時。release profile 又開了 `lto = true` 與 `codegen-units = 1`。debug 與 release 是兩份獨立的產物，都跑過的話 `target/` 會到 4.4 GB。
+- **處置**：正常現象。**完全冷啟動**（乾淨的 `target/`）實測要 **30 分鐘以上**；本文件其他地方寫的 6–7 分鐘是 `target/` 已有暖機資料時的數字，不要拿來當基準。**不要**隨手刪 `src-tauri/target/`，刪掉下次又要重來一遍。
 
 #### 特徵碼的替換長度必須與原始長度相同
 
